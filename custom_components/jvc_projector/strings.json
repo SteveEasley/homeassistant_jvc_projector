@@ -40,14 +40,17 @@
       }
     },
     "select": {
+      "anamorphic": {
+        "name": "Anamorphic"
+      },
       "clear_motion_drive": {
         "name": "Clear Motion Drive"
       },
-      "hdr": {
-        "name": "HDR"
+      "dynamic_control": {
+        "name": "Dynamic Control"
       },
-      "hdr_processing": {
-        "name": "HDR Processing"
+      "eshift": {
+        "name": "E-Shift"
       },
       "input": {
         "name": "Input"
@@ -55,13 +58,34 @@
       "installation_mode": {
         "name": "Installation Mode"
       },
+      "light_power": {
+        "name": "Light Power"
+      },
       "low_latency_mode": {
         "name": "Low Latency Mode"
       }
     },
     "sensor": {
+      "color_depth": {
+        "name": "Color Depth"
+      },
+      "color_space": {
+        "name": "Color Space"
+      },
+      "hdr": {
+        "name": "HDR"
+      },
+      "hdr_processing": {
+        "name": "HDR Processing"
+      },
       "light_time": {
-        "name": "Lamp/Laser Time"
+        "name": "Light Time"
+      },
+      "model": {
+        "name": "Model"
+      },
+      "picture_mode": {
+        "name": "Picture Mode"
       },
       "power": {
         "name": "[%key:component::sensor::entity_component::power::name%]",

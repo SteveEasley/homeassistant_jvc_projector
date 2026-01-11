@@ -30,7 +30,13 @@ _LOGGER = logging.getLogger(__name__)
 INTERVAL_SLOW = timedelta(seconds=10)
 INTERVAL_FAST = timedelta(seconds=5)
 
-CORE_COMMANDS: tuple[type[Command], ...] = (cmd.Power, cmd.Signal, cmd.Input)
+CORE_COMMANDS: tuple[type[Command], ...] = (
+    cmd.ModelName,
+    cmd.Power,
+    cmd.Signal,
+    cmd.Input,
+    cmd.LightTime,
+)
 
 type JVCConfigEntry = ConfigEntry[JvcProjectorDataUpdateCoordinator]
 
@@ -68,26 +74,30 @@ class JvcProjectorDataUpdateCoordinator(DataUpdateCoordinator[dict[str, str]]):
         except JvcProjectorAuthError as err:
             raise ConfigEntryAuthFailed("Password authentication failed") from err
 
+        self.state[cmd.ModelName] = f"{self.device.model} ({self.device.spec})"
+
     async def _async_update_data(self) -> dict[str, Any]:
-        """Get the latest state data."""
+        """Update state with the current value of a command."""
         new_state: dict[type[Command], str] = {}
         deferred_commands: list[type[Command]] = []
 
         try:
             power = await self._update(cmd.Power, new_state)
-            if power == cmd.Power.ON:
-                await self._update(cmd.Input, new_state)
 
+            if power == cmd.Power.ON:
                 signal = await self._update(cmd.Signal, new_state)
+                await self._update(cmd.Input, new_state)
+                await self._update(cmd.LightTime, new_state)
+
                 if signal == cmd.Signal.SIGNAL:
-                    # Update state for all enabled platform entities
                     for command in self.registered_commands:
                         if command.depends:
+                            # Command has dependencies so defer until below
                             deferred_commands.append(command)
                         else:
                             await self._update(command, new_state)
 
-                    # Update state for deferred dependencies
+                    # Deferred commands should have had dependencies met above
                     for command in deferred_commands:
                         depend_command, depend_values = next(
                             iter(command.depends.items())
@@ -99,23 +109,23 @@ class JvcProjectorDataUpdateCoordinator(DataUpdateCoordinator[dict[str, str]]):
                             value = self.state[depend_command]
                         if value and value in depend_values:
                             await self._update(command, new_state)
-                            break
 
             elif self.state.get(cmd.Signal) != cmd.Signal.NONE:
                 new_state[cmd.Signal] = cmd.Signal.NONE
 
         except JvcProjectorTimeoutError as err:
             # Timeouts are expected when the projector loses signal and ignores commands for a brief time.
-            self.last_update_success = False
+            self.last_update_success = False  # avoid log noise
             raise UpdateFailed(retry_after=1.0) from err
 
+        # Clear state on signal loss
         if (
             new_state.get(cmd.Signal) == cmd.Signal.NONE
             and self.state.get(cmd.Signal) != cmd.Signal.NONE
         ):
-            # Clear state on signal loss
             self.state = {k: v for k, v in self.state.items() if k in CORE_COMMANDS}
 
+        # Update state with new values
         for k, v in new_state.items():
             self.state[k] = v
 
@@ -129,17 +139,16 @@ class JvcProjectorDataUpdateCoordinator(DataUpdateCoordinator[dict[str, str]]):
     async def _update(
         self, command: type[Command], new_state: dict[type[Command], str]
     ) -> str | None:
-        """Helper function to get command value."""
+        """Update state with the current value of a command."""
         value = await self.device.get(command)
 
-        # Detect value changes
         if value != self.state.get(command):
             new_state[command] = value
 
         return value
 
     def get_options(self, command: str) -> list[str]:
-        """Get the values for a command."""
+        """Get the available options for a command."""
         capability = self.capabilities.get(command)
         if not isinstance(capability, dict):
             return []
@@ -164,6 +173,6 @@ class JvcProjectorDataUpdateCoordinator(DataUpdateCoordinator[dict[str, str]]):
             self.registered_commands.add(command)
 
     def unregister(self, command: type[Command]) -> None:
-        """Unregister a command to get scheduled updates."""
+        """Unregister a command from getting scheduled updates."""
         if command in self.registered_commands:
             self.registered_commands.remove(command)
