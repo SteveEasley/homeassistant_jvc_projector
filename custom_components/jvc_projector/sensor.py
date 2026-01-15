@@ -28,19 +28,20 @@ class JvcProjectorSensorDescription(SensorEntityDescription):
 
 SENSORS: tuple[JvcProjectorSensorDescription, ...] = (
     JvcProjectorSensorDescription(
-        key="model",
-        command=cmd.ModelName,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    JvcProjectorSensorDescription(
         key="power",
         command=cmd.Power,
         device_class=SensorDeviceClass.ENUM,
     ),
     JvcProjectorSensorDescription(
+        key="model",
+        command=cmd.ModelName,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    JvcProjectorSensorDescription(
         key="source",
         command=cmd.Source,
         device_class=SensorDeviceClass.ENUM,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     JvcProjectorSensorDescription(
         key="light_time",
@@ -54,30 +55,35 @@ SENSORS: tuple[JvcProjectorSensorDescription, ...] = (
         command=cmd.ColorDepth,
         device_class=SensorDeviceClass.ENUM,
         entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     JvcProjectorSensorDescription(
         key="color_space",
         command=cmd.ColorSpace,
         device_class=SensorDeviceClass.ENUM,
         entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     JvcProjectorSensorDescription(
         key="hdr",
         command=cmd.Hdr,
         device_class=SensorDeviceClass.ENUM,
         entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     JvcProjectorSensorDescription(
         key="hdr_processing",
         command=cmd.HdrProcessing,
         device_class=SensorDeviceClass.ENUM,
         entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     JvcProjectorSensorDescription(
         key="picture_mode",
         command=cmd.PictureMode,
         device_class=SensorDeviceClass.ENUM,
         entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 )
 
@@ -114,13 +120,21 @@ class JvcProjectorSensorEntity(JvcProjectorEntity, SensorEntity):
         self._attr_translation_key = description.key
         self._attr_unique_id = f"{self._attr_unique_id}_{description.key}"
 
+        self._options_map: dict[str, str] = {}
         if self.device_class == SensorDeviceClass.ENUM:
-            self._attr_options = coordinator.get_options(self.command.name)
+            self._options_map = coordinator.get_options_map(self.command.name)
+
+    @property
+    def options(self) -> list[str]:
+        """Return a set of possible options."""
+        return list(self._options_map.values())
 
     @property
     def native_value(self) -> str | None:
         """Return the native value."""
-        return self.coordinator.data.get(self.command.name)
+        if value := self.coordinator.data.get(self.command.name):
+            return self._options_map.get(value)
+        return None
 
     async def async_added_to_hass(self) -> None:
         """Register callbacks."""

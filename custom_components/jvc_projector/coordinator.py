@@ -38,6 +38,8 @@ CORE_COMMANDS: tuple[type[Command], ...] = (
     cmd.LightTime,
 )
 
+TRANSLATIONS = str.maketrans({"+": "p", "%": "p", ":": "x"})
+
 type JVCConfigEntry = ConfigEntry[JvcProjectorDataUpdateCoordinator]
 
 
@@ -59,7 +61,11 @@ class JvcProjectorDataUpdateCoordinator(DataUpdateCoordinator[dict[str, str]]):
         )
 
         self.device: JvcProjector = device
-        self.unique_id: str | None = None
+
+        if TYPE_CHECKING:
+            assert config_entry.unique_id is not None
+        self.unique_id = config_entry.unique_id
+
         self.capabilities: dict[str, Any] = {}
         self.state: dict[type[Command], str] = {}
         self.registered_commands: set[type[Command]] = set()
@@ -70,7 +76,9 @@ class JvcProjectorDataUpdateCoordinator(DataUpdateCoordinator[dict[str, str]]):
             self.unique_id = format_mac(await self.device.get(cmd.MacAddress))
             self.capabilities = self.device.capabilities()
         except JvcProjectorTimeoutError as err:
-            raise ConfigEntryNotReady(f"Unable to connect to {self.device.ip}") from err
+            raise ConfigEntryNotReady(
+                f"Unable to connect to {self.device.host}"
+            ) from err
         except JvcProjectorAuthError as err:
             raise ConfigEntryAuthFailed("Password authentication failed") from err
 
@@ -147,21 +155,18 @@ class JvcProjectorDataUpdateCoordinator(DataUpdateCoordinator[dict[str, str]]):
 
         return value
 
-    def get_options(self, command: str) -> list[str]:
+    def get_options_map(self, command: str) -> dict[str, str]:
         """Get the available options for a command."""
-        capability = self.capabilities.get(command)
-        if not isinstance(capability, dict):
-            return []
+        capabilities = self.capabilities.get(command, {})
 
-        parameter = capability.get("parameter")
-        if not isinstance(parameter, dict):
-            return []
+        if TYPE_CHECKING:
+            assert isinstance(capabilities, dict)
+            assert isinstance(capabilities.get("parameter", {}), dict)
+            assert isinstance(capabilities.get("parameter", {}).get("read", {}), dict)
 
-        read = parameter.get("read")
-        if not isinstance(read, dict):
-            return []
+        values = list(capabilities.get("parameter", {}).get("read", {}).values())
 
-        return list(read.values())
+        return {v: v.translate(TRANSLATIONS) for v in values}
 
     def supports(self, command: type[Command]) -> bool:
         """Check if the device supports a command."""
