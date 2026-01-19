@@ -21,7 +21,7 @@ from .entity import JvcProjectorEntity
 
 @dataclass(frozen=True, kw_only=True)
 class JvcProjectorSensorDescription(SensorEntityDescription):
-    """Describes JVC Projector select entities."""
+    """Describes JVC Projector sensor entities."""
 
     command: type[Command]
 
@@ -33,57 +33,46 @@ SENSORS: tuple[JvcProjectorSensorDescription, ...] = (
         device_class=SensorDeviceClass.ENUM,
     ),
     JvcProjectorSensorDescription(
-        key="model",
-        command=cmd.ModelName,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    JvcProjectorSensorDescription(
-        key="source",
-        command=cmd.Source,
-        device_class=SensorDeviceClass.ENUM,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    JvcProjectorSensorDescription(
         key="light_time",
         command=cmd.LightTime,
         device_class=SensorDeviceClass.DURATION,
-        native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.DIAGNOSTIC,
+        native_unit_of_measurement=UnitOfTime.HOURS,
     ),
     JvcProjectorSensorDescription(
         key="color_depth",
         command=cmd.ColorDepth,
         device_class=SensorDeviceClass.ENUM,
-        entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     JvcProjectorSensorDescription(
         key="color_space",
         command=cmd.ColorSpace,
         device_class=SensorDeviceClass.ENUM,
-        entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     JvcProjectorSensorDescription(
         key="hdr",
         command=cmd.Hdr,
         device_class=SensorDeviceClass.ENUM,
-        entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     JvcProjectorSensorDescription(
         key="hdr_processing",
         command=cmd.HdrProcessing,
         device_class=SensorDeviceClass.ENUM,
-        entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     JvcProjectorSensorDescription(
         key="picture_mode",
         command=cmd.PictureMode,
         device_class=SensorDeviceClass.ENUM,
-        entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
 )
 
@@ -112,11 +101,10 @@ class JvcProjectorSensorEntity(JvcProjectorEntity, SensorEntity):
         description: JvcProjectorSensorDescription,
     ) -> None:
         """Initialize the JVC Projector sensor."""
-        super().__init__(coordinator)
-
-        self.entity_description = description
+        super().__init__(coordinator, description.command)
         self.command: type[Command] = description.command
 
+        self.entity_description = description
         self._attr_translation_key = description.key
         self._attr_unique_id = f"{self._attr_unique_id}_{description.key}"
 
@@ -125,23 +113,21 @@ class JvcProjectorSensorEntity(JvcProjectorEntity, SensorEntity):
             self._options_map = coordinator.get_options_map(self.command.name)
 
     @property
-    def options(self) -> list[str]:
+    def options(self) -> list[str] | None:
         """Return a set of possible options."""
-        return list(self._options_map.values())
+        if self.device_class == SensorDeviceClass.ENUM:
+            return list(self._options_map.values())
+        return None
 
     @property
     def native_value(self) -> str | None:
         """Return the native value."""
-        if value := self.coordinator.data.get(self.command.name):
+        value = self.coordinator.data.get(self.command.name)
+
+        if value is None:
+            return None
+
+        if self.device_class == SensorDeviceClass.ENUM:
             return self._options_map.get(value)
-        return None
 
-    async def async_added_to_hass(self) -> None:
-        """Register callbacks."""
-        await super().async_added_to_hass()
-        self.coordinator.register(self.command)
-
-    async def async_will_remove_from_hass(self) -> None:
-        """Unregister callbacks."""
-        self.coordinator.unregister(self.command)
-        await super().async_will_remove_from_hass()
+        return value

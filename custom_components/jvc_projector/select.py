@@ -40,11 +40,6 @@ SELECTS: Final[tuple[JvcProjectorSelectDescription, ...]] = (
         entity_registry_enabled_default=False,
     ),
     JvcProjectorSelectDescription(
-        key="low_latency_mode",
-        command=cmd.LowLatencyMode,
-        entity_registry_enabled_default=False,
-    ),
-    JvcProjectorSelectDescription(
         key="clear_motion_drive",
         command=cmd.ClearMotionDrive,
         entity_registry_enabled_default=False,
@@ -52,11 +47,6 @@ SELECTS: Final[tuple[JvcProjectorSelectDescription, ...]] = (
     JvcProjectorSelectDescription(
         key="anamorphic",
         command=cmd.Anamorphic,
-        entity_registry_enabled_default=False,
-    ),
-    JvcProjectorSelectDescription(
-        key="eshift",
-        command=cmd.EShift,
         entity_registry_enabled_default=False,
     ),
 )
@@ -86,11 +76,10 @@ class JvcProjectorSelectEntity(JvcProjectorEntity, SelectEntity):
         description: JvcProjectorSelectDescription,
     ) -> None:
         """Initialize the entity."""
-        super().__init__(coordinator)
-
-        self.entity_description = description
+        super().__init__(coordinator, description.command)
         self.command: type[Command] = description.command
 
+        self.entity_description = description
         self._attr_translation_key = description.key
         self._attr_unique_id = f"{self._attr_unique_id}_{description.key}"
 
@@ -112,15 +101,5 @@ class JvcProjectorSelectEntity(JvcProjectorEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
-        value = next((k for k, v in self._options_map.items() if v == option))
+        value = next((k for k, v in self._options_map.items() if v == option), None)
         await self.coordinator.device.set(self.command, value)
-
-    async def async_added_to_hass(self) -> None:
-        """Register callbacks."""
-        await super().async_added_to_hass()
-        self.coordinator.register(self.command)
-
-    async def async_will_remove_from_hass(self) -> None:
-        """Unregister callbacks."""
-        self.coordinator.unregister(self.command)
-        await super().async_will_remove_from_hass()

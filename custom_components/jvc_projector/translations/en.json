@@ -121,9 +121,9 @@
             "color_depth": {
                 "name": "Color Depth",
                 "state": {
-                    "10-bit": "10 Bit",
-                    "12-bit": "12 Bit",
-                    "8-bit": "8 Bit"
+                    "10-bit": "10-bit",
+                    "12-bit": "12-bit",
+                    "8-bit": "8-bit"
                 }
             },
             "color_space": {
@@ -159,9 +159,6 @@
             },
             "light_time": {
                 "name": "Light Time"
-            },
-            "model": {
-                "name": "Model"
             },
             "picture_mode": {
                 "name": "Picture Mode",

@@ -71,13 +71,6 @@
           "off": "[%key:common::state::off%]"
         }
       },
-      "eshift": {
-        "name": "E-Shift",
-        "state": {
-          "off": "[%key:common::state::off%]",
-          "on": "[%key:common::state::on%]"
-        }
-      },
       "input": {
         "name": "Input",
         "state": {
@@ -108,22 +101,15 @@
           "mid": "[%key:common::state::medium%]",
           "normal": "[%key:common::state::normal%]"
         }
-      },
-      "low_latency_mode": {
-        "name": "Low Latency Mode",
-        "state": {
-          "off": "[%key:common::state::off%]",
-          "on": "[%key:common::state::on%]"
-        }
       }
     },
     "sensor": {
       "color_depth": {
         "name": "Color Depth",
         "state": {
-          "8-bit": "8 Bit",
-          "10-bit": "10 Bit",
-          "12-bit": "12 Bit"
+          "8-bit": "8-bit",
+          "10-bit": "10-bit",
+          "12-bit": "12-bit"
         }
       },
       "color_space": {
@@ -160,9 +146,6 @@
       "light_time": {
         "name": "Light Time"
       },
-      "model": {
-        "name": "Model"
-      },
       "picture_mode": {
         "name": "Picture Mode",
         "state": {
@@ -189,9 +172,6 @@
           "standby": "[%key:common::state::standby%]",
           "warming": "Warming"
         }
-      },
-      "source": {
-        "name": "Source"
       }
     }
   }
