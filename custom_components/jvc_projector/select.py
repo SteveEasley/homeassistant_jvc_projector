@@ -49,6 +49,11 @@ SELECTS: Final[tuple[JvcProjectorSelectDescription, ...]] = (
         command=cmd.Anamorphic,
         entity_registry_enabled_default=False,
     ),
+    JvcProjectorSelectDescription(
+        key="picture_mode",
+        command=cmd.PictureMode,
+        entity_registry_enabled_default=False,
+    ),
 )
 
 
